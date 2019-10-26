@@ -1,5 +1,5 @@
 ############################################################################################################
-# AnnotSV 2.2.3                                                                                              #
+# AnnotSV 2.2.4                                                                                            #
 #                                                                                                          #
 # AnnotSV: An integrated tool for Structural Variations annotation and ranking                             #
 #                                                                                                          #
@@ -21,10 +21,12 @@
 # along with this program; If not, see <http://www.gnu.org/licenses/>.                                     #
 ############################################################################################################
 
-SHELL = /bin/tcsh
+SHELL = /bin/bash
 
 DESTDIR              ?=
 PREFIX               ?= /usr/local
+INSTALLDIR1          := $(shell readlink -f "$(DESTDIR)$(PREFIX)")
+INSTALLDIR2          := $(shell readlink -f "$(DESTDIR).")
 BINDIR               ?= $(PREFIX)/bin
 ETCDIR               ?= $(PREFIX)/etc
 SHAREDIR             ?= $(PREFIX)/share
@@ -38,16 +40,17 @@ RM                    = /bin/rm
 RMDIR                 = /bin/rmdir
 MKDIR                 = install -d
 MV                    = /bin/mv
-CP                    = install -p -m 0644 
+CP                    = install -p -m 0644
 CPDIR                 = /bin/cp -r
 CONFIGFILE            = etc/$(ANNOTSV)/configfile
 TCL_SCRIPTS           = $(shell find share/tcl/$(ANNOTSV)/ -name '*.tcl')
-DOCUMENTATIONS        = License.txt changeLog.txt commandLineOptions.txt README.AnnotSV_$(VERSION).pdf
-OTHERS_DOCUMENTATIONS = $(shell find share/doc/$(ANNOTSV)/ -type d -name 'Annotations_*')
+DOCUMENTATIONS        = $(shell find License.txt changeLog.txt commandLineOptions.txt README.AnnotSV_*.pdf)
+ANNOTATIONS           = $(shell find share/$(ANNOTSV)/ -type d -name 'Annotations_*')
+ORGANISM              = Human
 
 
 .PHONY: install
-ifeq ('$(PREFIX)' , '.')
+ifeq ('$(INSTALLDIR1)' , '$(INSTALLDIR2)')
 all: install-ligth
 install: install-ligth
 else
@@ -55,12 +58,11 @@ all: install-complete
 install: install-complete
 endif
 
-install-ligth: $(DOCUMENTATIONS)
-	$(MV) $^ $(DESTDIR)$(DOCDIR)/$(ANNOTSV)
-	$(MV) $(TCLDIRDISTRIBUTED) $(TCLDIR)
+
+install-ligth: install-display install-documentationlight
 	@echo "Done"
 
-install-complete: install-configfile install-executable install-tcl-toolbox install-doc install-others-doc
+install-display:
 	@echo ""
 	@echo "Installation of $(ANNOTSV)-$(VERSION):"
 	@echo "--------------------------------"
@@ -68,6 +70,12 @@ install-complete: install-configfile install-executable install-tcl-toolbox inst
 	@echo PREFIX=$(PREFIX)
 	@echo TCLVERSION=$(TCLVERSION)
 	@echo ""
+
+install-documentationlight: $(DOCUMENTATIONS)
+	$(MV) $^ $(DESTDIR)$(DOCDIR)/$(ANNOTSV)
+	$(MV) $(TCLDIRDISTRIBUTED) $(TCLDIR)
+
+install-complete: install-display install-configfile install-executable install-tcl-toolbox install-doc install-others-doc install-biological-data
 	@echo "Done"
 
 install-configfile: $(CONFIGFILE)
@@ -81,10 +89,10 @@ install-executable:
 	@echo ""
 	@echo "Executable installation"
 	@echo "-----------------------"
-	$(MKDIR) $(DESTDIR)$(BINDIR)/$(ANNOTSV)
-	install -p -m 0755 bin/$(ANNOTSV)/AnnotSV.tcl $(DESTDIR)$(BINDIR)/$(ANNOTSV)
+	$(MKDIR) $(DESTDIR)$(BINDIR)
+	install -p -m 0755 bin/AnnotSV $(DESTDIR)$(BINDIR)
 
-install-tcl-toolbox: $(TCL_SCRIPTS) 
+install-tcl-toolbox: $(TCL_SCRIPTS)
 	@echo ""
 	@echo "Tcl scripts installation"
 	@echo "------------------------"
@@ -98,25 +106,37 @@ install-doc: $(DOCUMENTATIONS)
 	$(MKDIR) $(DESTDIR)$(DOCDIR)/$(ANNOTSV)
 	$(CP) $^ $(DESTDIR)$(DOCDIR)/$(ANNOTSV)
 
-install-others-doc: $(OTHERS_DOCUMENTATIONS)
+install-others-doc: share/doc/$(ANNOTSV)/Example
 	$(CPDIR) $^ $(DESTDIR)$(DOCDIR)/$(ANNOTSV)
+
+install-biological-data: share/$(ANNOTSV)/Annotations_$(ORGANISM)
+	$(MKDIR) $(DESTDIR)$(SHAREDIR)/$(ANNOTSV)/
+	$(CPDIR) $^ $(DESTDIR)$(SHAREDIR)/$(ANNOTSV)/
 
 
 # make uninstall
 .PHONY: uninstall
-uninstall:
+
+ifeq ('$(PREFIX)' , '/usr/local')
+uninstall: uninstall1 uninstall3
+else
+uninstall: uninstall1 uninstall2 uninstall3
+endif
+
+uninstall1:
 	@echo ""
 	@echo "Uninstalling of $(ANNOTSV)"
 	@echo "------------------------"
-	$(RM) -r $(DESTDIR)$(BINDIR)/$(ANNOTSV)
-	$(RM) -r $(DESTDIR)$(TCLDIR)/$(ANNOTSV)
-	$(RM) -r $(DESTDIR)$(DOCDIR)/$(ANNOTSV)
-	$(RM) -r $(DESTDIR)$(ETCDIR)/$(ANNOTSV)
-	if ( $(PREFIX) != "/usr/local" ) then
-		$(RMDIR) --ignore-fail-on-non-empty $(DESTDIR)$(BINDIR) $(DESTDIR)$(TCLDIR) $(DESTDIR)$(DOCDIR) $(DESTDIR)$(SHAREDIR) $(DESTDIR)$(ETCDIR) $(DESTDIR)$(PREFIX)
-	endif
+	$(RM) -f $(DESTDIR)$(BINDIR)/$(ANNOTSV)
+	$(RM) -rf $(DESTDIR)$(TCLDIR)/$(ANNOTSV)
+	$(RM) -rf $(DESTDIR)$(DOCDIR)/$(ANNOTSV)
+	$(RM) -rf $(DESTDIR)$(SHAREDIR)/$(ANNOTSV)
+	$(RM) -rf $(DESTDIR)$(ETCDIR)/$(ANNOTSV)
+
+uninstall2:
+	$(RMDIR) --ignore-fail-on-non-empty $(DESTDIR)$(BINDIR) $(DESTDIR)$(TCLDIR) $(DESTDIR)$(DOCDIR) $(DESTDIR)$(SHAREDIR) $(DESTDIR)$(ETCDIR) $(DESTDIR)$(PREFIX)
+
+uninstall3:
 	@echo ""
 	@echo "Done"
-
-
 
