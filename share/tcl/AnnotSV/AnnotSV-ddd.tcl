@@ -133,10 +133,11 @@ proc updateDDDgeneFile {} {
     }
 
     WriteTextInFile [join $TexteToWrite "\n"] $DDDfileFormatted.tmp
+    WriteTextInFile [lindex $TexteToWrite 0] $DDDfileFormatted
     # Sorting of the bedfile:
     # Intersection with very large files can cause trouble with excessive memory usage.
     # A presort of the bed files by chromosome and then by start position combined with the use of the -sorted option will invoke a memory-efficient algorithm. 
-    if {[catch {eval exec sort -k1,1 -k2,2n $DDDfileFormatted.tmp > $DDDfileFormatted} Message]} {
+    if {[catch {eval exec tail -n +2 $DDDfileFormatted.tmp | sort -k1,1 -k2,2n >> $DDDfileFormatted} Message]} {
 	puts "-- updateDDDgeneFile --"
 	puts "sort -k1,1 -k2,2n $DDDfileFormatted.tmp > $DDDfileFormatted"
 	puts "$Message"
