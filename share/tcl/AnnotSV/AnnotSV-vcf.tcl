@@ -370,7 +370,7 @@ proc VCFsToBED {SV_VCFfiles} {
 		    if {$end eq ""} {set end [expr $pos-$variantLengthType1]}
 		    if {$svtype eq ""} {set svtype "DEL"}
 		}
-		if {![regexp -nocase "^$refbis" $altbis] && ![regexp -nocase "^$altbis" $refbis]} {
+		if {![string match -nocase "$refbis*" $altbis] && ![string match -nocase "$altbis*" $refbis]} {
 		    # Complex SV: AGT>ATTGCATGGACCTGAGTCCCCAAAAAAAAAAATTTTTTTTTTGGGGGGGGGGCCCCCCCCCCGGGGGGGGGG 
 		    set variantLengthType1 ""
 		} elseif {[regexp "\\\." $ref] || [regexp "\\\." $alt]} {
